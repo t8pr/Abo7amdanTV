@@ -1,0 +1,6 @@
+flask
+flask-socketio
+pyautogui
+keyboard
+screeninfo
+screeninfo

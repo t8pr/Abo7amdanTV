@@ -1,0 +1,254 @@
+:root {
+    --bg-color: #050505;
+    --text-color: #ffffff;
+    --focus-outline: 3px solid #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --accent: #e50914;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+    width: 1360px;
+    height: 768px;
+    margin: 0 auto;
+}
+
+.tv-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 4rem;
+    z-index: 10;
+}
+
+.nav-brand {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+.nav-item {
+    font-size: 1.1rem;
+    font-weight: 500;
+    opacity: 0.6;
+    padding: 0.6rem 1.4rem;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.nav-item.focused {
+    opacity: 1;
+    background-color: rgba(255,255,255,0.15);
+    transform: scale(1.1);
+    outline: var(--focus-outline);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+}
+
+.nav-icons {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-size: 1.4rem;
+    opacity: 0.8;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.clock {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+
+.featured-banner {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 4rem;
+    margin-top: -6rem; 
+    padding-top: 6rem;
+    overflow: hidden;
+}
+
+.banner-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: top center;
+    z-index: -2;
+    transition: background-image 1s ease-in-out;
+    background-color: #111;
+}
+
+.banner-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #050505 0%, rgba(5,5,5,0.85) 45%, transparent 100%),
+                linear-gradient(0deg, #050505 0%, transparent 50%);
+    z-index: -1;
+}
+
+.banner-content {
+    max-width: 50%;
+    z-index: 1;
+}
+
+.banner-title {
+    font-size: 3.5rem;
+    margin-bottom: 0.8rem;
+    line-height: 1.1;
+    font-weight: 900;
+    text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+}
+
+.banner-description {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    margin-bottom: 1.8rem;
+    line-height: 1.5;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.banner-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.8rem 2.2rem;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 40px;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+}
+
+.btn.focused {
+    transform: scale(1.05);
+    outline: var(--focus-outline);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+}
+
+
+.apps-section {
+    padding: 0 4rem 3rem 4rem;
+    z-index: 5;
+    background: linear-gradient(0deg, #050505 80%, transparent 100%);
+}
+
+.section-title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+    font-weight: 700;
+}
+
+.apps-row {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.app-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    transition: all 0.3s ease;
+    border-radius: 14px;
+    padding: 0.8rem;
+}
+
+.app-card.focused {
+    transform: scale(1.1);
+    background-color: var(--card-bg);
+    outline: var(--focus-outline);
+}
+
+.app-icon {
+    width: 140px;
+    height: 80px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    padding: 1rem;
+}
+
+.app-icon img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+
+.netflix { background-color: #000000; border: 1px solid #333; }
+.youtube { background-color: #ffffff; }
+.prime { background-color: #000000; border: 1px solid #333; }
+.osn { background-color: #000000; border: 1px solid #333; }
+.thmanyah { background: linear-gradient(135deg, #10b981, #065f42); }
+
+.app-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    opacity: 0.9;
+}

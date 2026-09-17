@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abo7amdanTV OS</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="tv-container">
+        
+        <nav class="top-nav">
+            <div class="nav-brand">Abo7amdanTV</div>
+            <ul class="nav-links">
+                <li class="nav-item focusable" data-action="nav">For you</li>
+                <li class="nav-item focusable" data-action="nav">Movies</li>
+                <li class="nav-item focusable" data-action="nav">Shows</li>
+                <li class="nav-item focusable" data-action="nav">Apps</li>
+            </ul>
+            <div class="nav-icons">
+                <div class="clock" id="clock">--:--</div>
+                <i class="fa-solid fa-search"></i>
+                <i class="fa-solid fa-gear"></i>
+            </div>
+        </nav>
+
+        
+        <main class="content-area">
+            
+            <section class="featured-banner">
+                
+                <div class="banner-bg" id="banner-bg"></div>
+                
+                <div class="banner-gradient"></div>
+                
+                <div class="banner-content">
+                    <h1 class="banner-title" id="banner-title">Loading...</h1>
+                    <p class="banner-description" id="banner-desc">Fetching the latest premium content...</p>
+                    <div class="banner-buttons">
+                        <button class="btn focusable" data-action="play"><i class="fa-solid fa-play"></i> Watch Now</button>
+                        <button class="btn btn-secondary focusable" data-action="info"><i class="fa-solid fa-circle-info"></i> Details</button>
+                    </div>
+                </div>
+            </section>
+
+            
+            <section class="apps-section">
+                <h2 class="section-title">Your Apps</h2>
+                <div class="apps-row">
+                    <div class="app-card focusable" data-url="https://www.netflix.com">
+                        <div class="app-icon netflix"><img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix"></div>
+                        <span class="app-name">Netflix</span>
+                    </div>
+                    <div class="app-card focusable" data-url="https://www.youtube.com/tv">
+                        <div class="app-icon youtube"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" alt="YouTube"></div>
+                        <span class="app-name">YouTube</span>
+                    </div>
+                    <div class="app-card focusable" data-url="https://www.primevideo.com">
+                        <div class="app-icon prime"><img src="https://upload.wikimedia.org/wikipedia/commons/1/11/Amazon_Prime_Video_logo.svg" alt="Prime Video"></div>
+                        <span class="app-name">Prime</span>
+                    </div>
+                    <div class="app-card focusable" data-url="https://www.osnplus.com">
+                        <div class="app-icon osn"><img src="/imgs/osn.jpg" alt="OSN"></div>
+                        <span class="app-name">OSN+</span>
+                    </div>
+                    <div class="app-card focusable" data-url="https://thmanyah.com">
+                        <div class="app-icon thmanyah"><img src="/imgs/tham.png" alt="Thmanyah"></div>
+                        <span class="app-name">Thmanyah</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
