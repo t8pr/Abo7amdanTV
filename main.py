@@ -41,43 +41,65 @@ import ctypes
 import keyboard
 
 tv_hwnd = None
+is_launching = False
 
-def get_window_on_monitor(monitor):
-    """Finds the Brave window that is physically located on the given monitor."""
+def get_os_hwnd():
+    """Finds the exact Abo7amdanTV OS window by title, completely ignoring VSCode and Netflix."""
     EnumWindows = ctypes.windll.user32.EnumWindows
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
-    GetWindowRect = ctypes.windll.user32.GetWindowRect
+    GetWindowText = ctypes.windll.user32.GetWindowTextW
+    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
     IsWindowVisible = ctypes.windll.user32.IsWindowVisible
 
-    class RECT(ctypes.Structure):
-        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-
     found_hwnd = None
-
     def foreach_window(hwnd, lParam):
         nonlocal found_hwnd
         if IsWindowVisible(hwnd):
-            rect = RECT()
-            GetWindowRect(hwnd, ctypes.byref(rect))
-            
-            if rect.left >= monitor.x and rect.left < monitor.x + monitor.width:
-                buff = ctypes.create_unicode_buffer(256)
-                ctypes.windll.user32.GetClassNameW(hwnd, buff, 256)
-                if "Chrome_WidgetWin" in buff.value:
+            length = GetWindowTextLength(hwnd)
+            if length > 0:
+                buff = ctypes.create_unicode_buffer(length + 1)
+                GetWindowText(hwnd, buff, length + 1)
+                title = buff.value
+                
+                # ONLY lock onto the OS window. NEVER lock onto VSCode or a dying Netflix window.
+                if "Abo7amdanTV OS" in title and "Visual Studio Code" not in title:
                     found_hwnd = hwnd
-                    return False 
+                    return False
         return True
-
     EnumWindows(EnumWindowsProc(foreach_window), 0)
     return found_hwnd
+
+launch_lock = threading.Lock()
 
 def go_home():
     """Triggered by the Home/Esc key to return to the OS."""
     global tv_hwnd
-    if tv_hwnd:
-        ctypes.windll.user32.PostMessageW(tv_hwnd, 0x0112, 0xF060, 0)
-    time.sleep(0.5)
-    launch_browser()
+    if not launch_lock.acquire(blocking=False):
+        return
+        
+    try:
+        if tv_hwnd and ctypes.windll.user32.IsWindowVisible(tv_hwnd):
+            # Send direct hardware close signal
+            ctypes.windll.user32.PostMessageW(tv_hwnd, 0x0112, 0xF060, 0)
+            
+            # Wait for the window to physically disappear from the screen
+            for _ in range(15):
+                if not ctypes.windll.user32.IsWindowVisible(tv_hwnd):
+                    break
+                time.sleep(0.1)
+                
+            # If Netflix stubbornly refuses to close, force it via keyboard overrides
+            if ctypes.windll.user32.IsWindowVisible(tv_hwnd):
+                ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
+                time.sleep(0.1)
+                pyautogui.hotkey('ctrl', 'w')
+                time.sleep(0.1)
+                pyautogui.hotkey('alt', 'f4')
+                
+        tv_hwnd = None
+        launch_browser()
+    finally:
+        threading.Timer(2.5, launch_lock.release).start()
 
 def launch_browser(url="http://localhost:5000/os"):
     """Launch Brave perfectly on the TV and capture its handle."""
@@ -85,11 +107,10 @@ def launch_browser(url="http://localhost:5000/os"):
     tv_monitor = get_tv_display()
     if tv_monitor:
         args = [
-            f"--app={url}",
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
             "--start-fullscreen",
-            "--new-window",
-            "--disable-session-crashed-bubble"
+            "--disable-session-crashed-bubble",
+            f"--app={url}"
         ]
         brave_paths = [
             "brave.exe",
@@ -101,8 +122,25 @@ def launch_browser(url="http://localhost:5000/os"):
             try:
                 if path == "brave.exe" or os.path.exists(path):
                     subprocess.Popen([path] + args)
-                    time.sleep(2)
-                    tv_hwnd = get_window_on_monitor(tv_monitor)
+                    
+                    # Wait up to 10 seconds for the window to appear (IPC can be slow)
+                    for _ in range(100):
+                        tv_hwnd = get_os_hwnd()
+                        if tv_hwnd:
+                            break
+                        time.sleep(0.1)
+                    
+                    if tv_hwnd:
+                        # 1. Force the window physically into the TV monitor
+                        ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
+                        
+                        # 2. Aggressively ensure focus and send F11
+                        for _ in range(15):
+                            ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
+                            time.sleep(0.1)
+                            if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
+                                keyboard.send('f11')
+                                break
                     break
             except:
                 continue
@@ -111,7 +149,6 @@ def close_tv_window():
     """Safely closes only the exact TV window we opened."""
     global tv_hwnd
     if tv_hwnd:
-        
         ctypes.windll.user32.PostMessageW(tv_hwnd, 0x0112, 0xF060, 0)
         tv_hwnd = None
 
