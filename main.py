@@ -44,7 +44,7 @@ tv_hwnd = None
 is_launching = False
 
 def get_os_hwnd():
-    """Finds the exact Abo7amdanTV OS window by title, completely ignoring VSCode and Netflix."""
+    """Finds the exact Abo7amdanTV OS window instantly by title and class name."""
     EnumWindows = ctypes.windll.user32.EnumWindows
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
     GetWindowText = ctypes.windll.user32.GetWindowTextW
@@ -61,8 +61,14 @@ def get_os_hwnd():
                 GetWindowText(hwnd, buff, length + 1)
                 title = buff.value
                 
-                # ONLY lock onto the OS window. NEVER lock onto VSCode or a dying Netflix window.
-                if "Abo7amdanTV OS" in title and "Visual Studio Code" not in title:
+                # Must be a Chromium browser window
+                class_buff = ctypes.create_unicode_buffer(256)
+                ctypes.windll.user32.GetClassNameW(hwnd, class_buff, 256)
+                if "Chrome_WidgetWin" not in class_buff.value:
+                    return True
+                
+                # Catch it instantly even while loading (localhost:5000), but exclude VSCode
+                if ("Abo7amdanTV OS" in title or "localhost:5000" in title) and "Visual Studio Code" not in title:
                     found_hwnd = hwnd
                     return False
         return True
@@ -134,11 +140,12 @@ def launch_browser(url="http://localhost:5000/os"):
                         # 1. Force the window physically into the TV monitor
                         ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
                         
-                        # 2. Aggressively ensure focus and send F11
+                        # 2. Aggressively ensure focus before sending F11
                         for _ in range(15):
                             ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
                             time.sleep(0.1)
                             if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
+                                time.sleep(0.3) # Give Chromium a moment to breathe so F11 doesn't get swallowed
                                 keyboard.send('f11')
                                 break
                     break
@@ -148,9 +155,22 @@ def launch_browser(url="http://localhost:5000/os"):
 def close_tv_window():
     """Safely closes only the exact TV window we opened."""
     global tv_hwnd
-    if tv_hwnd:
+    if tv_hwnd and ctypes.windll.user32.IsWindowVisible(tv_hwnd):
         ctypes.windll.user32.PostMessageW(tv_hwnd, 0x0112, 0xF060, 0)
-        tv_hwnd = None
+        
+        # Wait up to 1.5 seconds for it to die gracefully
+        for _ in range(15):
+            if not ctypes.windll.user32.IsWindowVisible(tv_hwnd):
+                break
+            time.sleep(0.1)
+            
+        # Force kill if it's being stubborn
+        if ctypes.windll.user32.IsWindowVisible(tv_hwnd):
+            ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
+            time.sleep(0.1)
+            pyautogui.hotkey('ctrl', 'w')
+            
+    tv_hwnd = None
 
 def tv_monitor_loop():
     """Runs continuously. Auto-launches when TV connects, auto-closes when TV disconnects."""
