@@ -4,7 +4,7 @@
   <img src="imgs/home.png" alt="Abo7amdanTV OS Home Interface" width="800"/>
 </div>
 
-Abo7amdanTV OS is a lightweight, strictly quarantined Smart TV operating system built for multi-monitor Windows environments. It transforms a secondary monitor (such as an LCD TV) into an isolated, fully automated entertainment hub without interfering with primary desktop productivity.
+Abo7amdanTV OS is a lightweight, strictly quarantined Smart TV operating system built for multi-monitor Windows environments. It transforms a secondary monitor (such as an non-smart TV) into an isolated, fully automated entertainment hub without interfering with primary desktop productivity.
 
 ## Architecture
 
