@@ -141,6 +141,7 @@ def launch_browser(url="http://localhost:5000/os"):
     if tv_monitor:
         args = [
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
+            "--kiosk",
             "--disable-session-crashed-bubble",
             f"--app={url}"
         ]
@@ -172,8 +173,11 @@ def launch_browser(url="http://localhost:5000/os"):
                     # 2. Force the window to perfectly cover the TV monitor (overlaps taskbar natively)
                     ctypes.windll.user32.SetWindowPos(tv_hwnd, 0, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, 0x0040)
                     
-                    # 3. Bring to front
-                    force_foreground(tv_hwnd)
+                    # 3. Bring to front and trigger Chromium's internal UI hide (removes X and Square buttons)
+                    if force_foreground(tv_hwnd):
+                        time.sleep(0.5) # Wait for focus to settle
+                        pyautogui.press('f11')
+                        
                     break
             except:
                 continue
