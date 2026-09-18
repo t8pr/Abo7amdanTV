@@ -1,13 +1,4 @@
-# Abo7amdanTV OS
-
-```text
-           \ /
-            x 
- .-. _______|
- |=|/     /  \
- | |_____|_""_|
- |_|_[X]_|____|
-```
+# Abo7amdanTV - An Smart Operating System
 
 <div align="center">
   <img src="imgs/home.png" alt="Abo7amdanTV OS Home Interface" width="800"/>
