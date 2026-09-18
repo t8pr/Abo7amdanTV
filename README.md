@@ -55,7 +55,7 @@ If you wish to deploy this TV OS on your own multi-monitor Windows setup:
    ```
 
 3. **Configure Monitor Output**
-   The daemon specifically looks for a monitor with a width of `1360` pixels (standard 768p LCD TV). If your secondary monitor has a different resolution, modify the `get_tv_display()` function in `main.py` to match your target hardware.
+   The daemon specifically looks for a monitor with a width of `1360` pixels (standard 768p non-smart TV). If your secondary monitor has a different resolution, modify the `get_tv_display()` function in `main.py` to match your target hardware.
 
 4. **Compile for Production**
    Use PyInstaller to compile the source code into a standalone background daemon:
