@@ -162,20 +162,20 @@ def launch_browser(url="http://localhost:5000/os"):
                             break
                         time.sleep(0.2)
                     
-                    # We caught it! Force perfect borderless fullscreen via Windows API
-                    GWL_STYLE = -16
-                    WS_POPUP = 0x80000000
+                    # 1. Physically move the window to the TV monitor instantly
+                    ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
                     
-                    # 1. Strip all borders and titlebars
-                    ctypes.windll.user32.SetWindowLongW(tv_hwnd, GWL_STYLE, WS_POPUP)
+                    # 2. Give Chromium time to render the DOM and initialize key listeners
+                    time.sleep(1.5)
                     
-                    # 2. Force the window to perfectly cover the TV monitor (overlaps taskbar natively)
-                    ctypes.windll.user32.SetWindowPos(tv_hwnd, 0, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, 0x0040)
-                    
-                    # 3. Bring to front and trigger Chromium's internal UI hide
-                    if force_foreground(tv_hwnd):
-                        time.sleep(1.0) # Wait for page to fully initialize before sending F11
-                        pyautogui.press('f11')
+                    # 3. Aggressively steal focus and inject native F11 (Removes the navbar)
+                    for _ in range(10):
+                        if force_foreground(tv_hwnd):
+                            # Double check that nothing stole focus back in the last millisecond
+                            if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
+                                keyboard.send('f11')
+                                break
+                        time.sleep(0.5)
                         
                     break
             except:
