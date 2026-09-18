@@ -1,72 +1,51 @@
-<div align="center">
-  <img src="imgs/home.png" alt="Abo7amdanTV OS Interface" width="100%" />
-  <br />
-  <h1>Abo7amdanTV OS</h1>
-  <p><strong>An Enterprise-Grade, Self-Managing Smart TV Operating System for Windows</strong></p>
-  
-  <p>
-    <a href="#overview">Overview</a> •
-    <a href="#key-features">Features</a> •
-    <a href="#system-architecture">Architecture</a> •
-    <a href="#installation-guide">Installation</a> •
-    <a href="#customization-for-your-own-tv">Customization</a>
-  </p>
-</div>
+# Abo7amdanTV OS
 
-<hr />
-
-## OVERVIEW
-
-Abo7amdanTV OS is a high-performance, fully automated Smart TV environment designed for multi-monitor Windows workstations. Instead of wrestling with standard desktop interfaces, wireless mice, or juggling browser windows on a secondary television display, this project transforms any connected TV into a dedicated, cinematic Smart TV experience.
-
-Engineered to run as a silent, zero-footprint background daemon, the system utilizes direct Windows API calls to monitor hardware states. The exact millisecond you power on your television, the OS dynamically injects a beautiful, high-definition interface tailored specifically to your display coordinates. When the TV is powered off, the daemon surgically terminates the environment, ensuring your primary workspace remains completely untouched.
-
-## KEY FEATURES
-
-- **Autonomous Hardware Detection:** Continuously polls display outputs with zero CPU overhead. Instantly deploys the OS when the designated television is detected, and forcefully cleans up the environment the moment the display is disconnected.
-- **Cinematic Frontend:** A fluid, responsive HTML5/CSS3 interface perfectly scaled for exact television resolutions, eliminating scrollbars and visual bleeding.
-- **Native Remote Integration:** Engineered to work flawlessly with mobile trackpad applications (such as Remote Mouse). Custom event listeners snap focus to elements, and global hardware interrupts (`Home` / `Esc`) allow users to instantly escape third-party streaming apps (Netflix, Prime) back to the central OS.
-- **Absolute Fullscreen Enforcement:** Utilizes Chromium's `--start-fullscreen` arguments combined with memory-level window tracking to guarantee a borderless, immersive experience.
-- **Spatial & Memory Window Tracking:** Built with `ctypes`, the Python daemon tracks windows not by guessing, but by actively scanning Windows Memory (HWNDs) for exact title signatures and physical pixel coordinates on the GPU. This prevents catastrophic collisions with the user's primary browsing sessions and natively bypasses IPC routing delays.
-
-## SYSTEM ARCHITECTURE
-
-The project leverages a robust hybrid architecture, bridging low-level system operations with modern web technologies.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Daemon as Python Daemon
-    participant WinAPI as Windows API
-    participant TV as TV Display
-    
-    User->>TV: Turns on Television
-    Daemon->>WinAPI: Polls display states (screeninfo)
-    WinAPI-->>Daemon: Detects LCDTV16
-    Daemon->>TV: Spawns Chromium (--start-fullscreen)
-    Daemon->>WinAPI: Scans GPU Memory for Exact Title HWND
-    WinAPI-->>Daemon: Returns Window Handle
-    User->>TV: Browses Netflix
-    User->>Daemon: Presses 'Home' Hotkey (RemoteMouse)
-    Daemon->>WinAPI: Injects SC_CLOSE directly into Netflix HWND
-    Daemon->>WinAPI: Actively verifies Window Death
-    Daemon->>TV: Relaunches pristine TV OS
-    User->>TV: Turns off Television
-    Daemon->>WinAPI: Triggers SC_CLOSE to OS HWND
+```text
+           \ /
+            x 
+ .-. _______|
+ |=|/     /  \
+ | |_____|_""_|
+ |_|_[X]_|____|
 ```
 
-### Backend Daemon (Python / Flask)
-- **Flask:** Acts as a lightweight, secure loopback server to deliver frontend assets instantaneously.
-- **ctypes & screeninfo:** Interfaces directly with the Windows API (`GetWindowText`, `IsWindowVisible`, `PostMessageW`) to perform surgical window management.
-- **psutil & pyautogui:** Manages hardware interrupts and simulates raw keyboard telemetry to manipulate third-party application states without explicit API access.
+Abo7amdanTV OS is a lightweight, strictly quarantined Smart TV operating system built for multi-monitor Windows environments. It transforms a secondary monitor (such as an LCD TV) into an isolated, fully automated entertainment hub without interfering with primary desktop productivity.
 
-### Frontend (HTML / CSS / JS)
-- Modern CSS grid architecture utilizing Google Fonts (Outfit).
-- Custom `mouseenter` and `click` listeners that bridge the gap between traditional trackpad inputs and Smart TV remote behaviors.
+## Architecture
 
-## INSTALLATION GUIDE
+The system operates as a background Windows daemon that actively monitors hardware states and manages Chromium IPC routing to enforce strict monitor quarantine.
 
-This system is built to run flawlessly on Windows 10/11 machines running Brave/Chromium browsers.
+```mermaid
+classDiagram
+    class SystemDaemon {
+        +Flask Internal Server
+        +Chromium IPC Controller
+        +Hardware Monitor
+    }
+    class TeleportationDaemon {
+        +scan_active_windows()
+        +enforce_quarantine_zone()
+        +relocate_to_primary_display()
+    }
+    class WindowController {
+        +bypass_foreground_lock()
+        +inject_native_fullscreen()
+        +hardware_terminate_signal()
+    }
+    SystemDaemon *-- TeleportationDaemon
+    SystemDaemon *-- WindowController
+```
+
+## Core Features
+
+* **Strict Quarantine Teleportation**: Chromium shares IPC processes across windows. To prevent desktop browsing tabs from accidentally spawning on the TV screen, the Teleportation Daemon actively scans the TV monitor space every 1.5 seconds. Any non-OS browsing window found in the quarantine zone is instantly teleported back to the primary desktop display.
+* **Native Fullscreen Injection**: Bypasses Windows `ForegroundLockTimeout` limits to hijack thread input and aggressively inject native Chromium `--start-fullscreen` arguments, guaranteeing a flawless, borderless TV experience on fresh boots.
+* **Hardware-Level Termination**: Overrides traditional Alt+F4 closures which can be intercepted by streaming platforms. The OS uses direct `SC_CLOSE` memory signals combined with `Ctrl+W` fallback macros to guarantee background audio processes are fully terminated when navigating home.
+* **Automated Display Lifecycle**: The daemon binds to the Windows display API. When the TV is powered on, the OS boots instantly. When the TV is powered off, the OS terminates its web processes to conserve system resources.
+
+## Installation & Setup
+
+If you wish to deploy this TV OS on your own multi-monitor Windows setup:
 
 1. **Clone the Repository**
    ```bash
@@ -75,40 +54,30 @@ This system is built to run flawlessly on Windows 10/11 machines running Brave/C
    ```
 
 2. **Install Dependencies**
-   Ensure Python 3.13+ is installed, then install the required modules:
+   Ensure Python 3.8+ is installed, then run:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Test the Daemon Native**
-   Run the application in your terminal to verify display detection:
-   ```bash
-   python main.py
-   ```
+3. **Configure Monitor Output**
+   The daemon specifically looks for a monitor with a width of `1360` pixels (standard 768p LCD TV). If your secondary monitor has a different resolution, modify the `get_tv_display()` function in `main.py` to match your target hardware.
 
-4. **Deploy as a Background Service**
-   For the ultimate experience, compile the project into a standalone executable using PyInstaller:
+4. **Compile for Production**
+   Use PyInstaller to compile the source code into a standalone background daemon:
    ```bash
    python -m PyInstaller --noconsole --onefile --add-data "templates;templates" --add-data "imgs;imgs" --name Abo7amdanTV_OS main.py
    ```
-   Place the resulting `.exe` into your Windows `shell:startup` folder. It will now run invisibly forever.
 
-## CUSTOMIZATION FOR YOUR OWN TV
+5. **Deploy to Startup**
+   Move the resulting `Abo7amdanTV_OS.exe` from the `dist/` directory into your Windows Startup folder:
+   ```text
+   %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+   ```
+   The OS will now autonomously manage your secondary display in the background on every system boot.
 
-You can easily adapt Abo7amdanTV OS for your specific television or monitor setup:
+## Technology Stack
 
-### 1. Update the Resolution Logic
-In `main.py`, locate the `get_tv_display()` function. Update the hardcoded resolution (e.g., `1360` and `768`) or hardware name to match your specific TV's specifications.
-```python
-if (m.width == 1920 and m.height == 1080): return m
-```
-
-### 2. Modify the Apps
-Open `templates/index.html` to add or remove streaming services from the home screen grid. Ensure you add corresponding high-quality thumbnails to the `imgs/` folder.
-
-### 3. Tweak the Frontend Scaling
-Open `templates/style.css` and adjust the root `width` and `height` properties to match your exact television resolution to ensure absolute pixel-perfect scaling.
-
-## LICENSE
-
-This project is open-source and available under the MIT License. Feel free to fork, modify, and build your own ultimate home theater setup.
+* **Backend Engine**: Python 3 (ctypes, pywin32)
+* **Local Server**: Flask
+* **Window Manipulation**: Windows User32 API
+* **Frontend**: HTML5, CSS3, Vanilla JavaScript
