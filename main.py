@@ -141,6 +141,7 @@ def launch_browser(url="http://localhost:5000/os"):
     if tv_monitor:
         args = [
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
+            "--start-fullscreen",
             "--disable-session-crashed-bubble",
             f"--app={url}"
         ]
@@ -164,16 +165,11 @@ def launch_browser(url="http://localhost:5000/os"):
                     # 1. Physically move the window to the TV monitor instantly
                     ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
                     
-                    # 2. Give Chromium time to render the DOM and initialize key listeners
-                    time.sleep(1.5)
-                    
-                    # 3. Aggressively steal focus and inject native F11 (Removes the navbar)
-                    for _ in range(10):
+                    # 2. Aggressively steal focus so the user can interact instantly
+                    for _ in range(5):
                         if force_foreground(tv_hwnd):
-                            if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
-                                keyboard.send('f11')
-                                break
-                        time.sleep(0.5)
+                            break
+                        time.sleep(0.2)
                         
                     break
             except:
