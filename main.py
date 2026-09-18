@@ -107,6 +107,33 @@ def go_home():
     finally:
         threading.Timer(2.5, launch_lock.release).start()
 
+def force_foreground(hwnd):
+    """Bypasses Windows ForegroundLockTimeout to brutally steal focus on boot."""
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    
+    if user32.GetForegroundWindow() == hwnd:
+        return True
+        
+    foreground_hwnd = user32.GetForegroundWindow()
+    if not foreground_hwnd:
+        user32.SetForegroundWindow(hwnd)
+        return user32.GetForegroundWindow() == hwnd
+        
+    foreground_thread = user32.GetWindowThreadProcessId(foreground_hwnd, None)
+    current_thread = kernel32.GetCurrentThreadId()
+    
+    if foreground_thread != current_thread:
+        user32.AttachThreadInput(current_thread, foreground_thread, True)
+        user32.BringWindowToTop(hwnd)
+        user32.ShowWindow(hwnd, 5) # SW_SHOW
+        user32.SetForegroundWindow(hwnd)
+        user32.AttachThreadInput(current_thread, foreground_thread, False)
+    else:
+        user32.SetForegroundWindow(hwnd)
+        
+    return user32.GetForegroundWindow() == hwnd
+
 def launch_browser(url="http://localhost:5000/os"):
     """Launch Brave perfectly on the TV and capture its handle."""
     global tv_hwnd
@@ -142,12 +169,13 @@ def launch_browser(url="http://localhost:5000/os"):
                         
                         # 2. Aggressively ensure focus before sending F11
                         for _ in range(15):
-                            ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
-                            time.sleep(0.1)
-                            if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
-                                time.sleep(0.3) # Give Chromium a moment to breathe so F11 doesn't get swallowed
+                            if force_foreground(tv_hwnd):
+                                # API-level fallback: force maximize even if Chromium ignores F11
+                                ctypes.windll.user32.ShowWindow(tv_hwnd, 3) 
+                                time.sleep(0.3) # Give Chromium a moment to breathe
                                 keyboard.send('f11')
                                 break
+                            time.sleep(0.1)
                     break
             except:
                 continue
