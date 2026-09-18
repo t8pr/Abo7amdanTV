@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     
-    const showIds = [82, 169, 2993, 43687, 84]; 
+    const showIds = [82, 169, 2993, 43687, 84, 2]; 
     let showsData = [];
     let currentShowIndex = 0;
 
