@@ -139,10 +139,14 @@ def launch_browser(url="http://localhost:5000/os"):
     global tv_hwnd
     tv_monitor = get_tv_display()
     if tv_monitor:
+        # Create an absolute path for the isolated TV profile
+        tv_profile_path = os.path.join(os.environ['LOCALAPPDATA'], 'Abo7amdanTV_Profile')
+        
         args = [
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
             "--start-fullscreen",
             "--disable-session-crashed-bubble",
+            f"--user-data-dir={tv_profile_path}",
             f"--app={url}"
         ]
         brave_paths = [
