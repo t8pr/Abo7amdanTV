@@ -141,7 +141,6 @@ def launch_browser(url="http://localhost:5000/os"):
     if tv_monitor:
         args = [
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
-            "--start-fullscreen",
             "--disable-session-crashed-bubble",
             f"--app={url}"
         ]
@@ -156,26 +155,25 @@ def launch_browser(url="http://localhost:5000/os"):
                 if path == "brave.exe" or os.path.exists(path):
                     subprocess.Popen([path] + args)
                     
-                    # Wait up to 10 seconds for the window to appear (IPC can be slow)
-                    for _ in range(100):
+                    # Wait INFINITELY for the OS window to appear so we never lose track of it
+                    while True:
                         tv_hwnd = get_os_hwnd()
                         if tv_hwnd:
                             break
-                        time.sleep(0.1)
+                        time.sleep(0.2)
                     
-                    if tv_hwnd:
-                        # 1. Force the window physically into the TV monitor
-                        ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
-                        
-                        # 2. Aggressively ensure focus before sending F11
-                        for _ in range(15):
-                            if force_foreground(tv_hwnd):
-                                # API-level fallback: force maximize even if Chromium ignores F11
-                                ctypes.windll.user32.ShowWindow(tv_hwnd, 3) 
-                                time.sleep(0.3) # Give Chromium a moment to breathe
-                                keyboard.send('f11')
-                                break
-                            time.sleep(0.1)
+                    # We caught it! Force perfect borderless fullscreen via Windows API
+                    GWL_STYLE = -16
+                    WS_POPUP = 0x80000000
+                    
+                    # 1. Strip all borders and titlebars
+                    ctypes.windll.user32.SetWindowLongW(tv_hwnd, GWL_STYLE, WS_POPUP)
+                    
+                    # 2. Force the window to perfectly cover the TV monitor (overlaps taskbar natively)
+                    ctypes.windll.user32.SetWindowPos(tv_hwnd, 0, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, 0x0040)
+                    
+                    # 3. Bring to front
+                    force_foreground(tv_hwnd)
                     break
             except:
                 continue
