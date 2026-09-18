@@ -139,14 +139,9 @@ def launch_browser(url="http://localhost:5000/os"):
     global tv_hwnd
     tv_monitor = get_tv_display()
     if tv_monitor:
-        # Create an absolute path for the isolated TV profile
-        tv_profile_path = os.path.join(os.environ['LOCALAPPDATA'], 'Abo7amdanTV_Profile')
-        
         args = [
             f"--window-position={tv_monitor.x},{tv_monitor.y}",
-            "--start-fullscreen",
             "--disable-session-crashed-bubble",
-            f"--user-data-dir={tv_profile_path}",
             f"--app={url}"
         ]
         brave_paths = [
@@ -169,11 +164,16 @@ def launch_browser(url="http://localhost:5000/os"):
                     # 1. Physically move the window to the TV monitor instantly
                     ctypes.windll.user32.MoveWindow(tv_hwnd, tv_monitor.x, tv_monitor.y, tv_monitor.width, tv_monitor.height, True)
                     
-                    # 2. Aggressively steal focus so the user can interact
-                    for _ in range(5):
+                    # 2. Give Chromium time to render the DOM and initialize key listeners
+                    time.sleep(1.5)
+                    
+                    # 3. Aggressively steal focus and inject native F11 (Removes the navbar)
+                    for _ in range(10):
                         if force_foreground(tv_hwnd):
-                            break
-                        time.sleep(0.2)
+                            if ctypes.windll.user32.GetForegroundWindow() == tv_hwnd:
+                                keyboard.send('f11')
+                                break
+                        time.sleep(0.5)
                         
                     break
             except:
@@ -199,31 +199,60 @@ def close_tv_window():
             
     tv_hwnd = None
 
+def enforce_main_monitor(tv_monitor):
+    """Teleports any normal Brave windows that accidentally opened on the TV back to the main screen."""
+    EnumWindows = ctypes.windll.user32.EnumWindows
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+    GetWindowText = ctypes.windll.user32.GetWindowTextW
+    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
+    IsWindowVisible = ctypes.windll.user32.IsWindowVisible
+
+    def foreach_window(hwnd, lParam):
+        if IsWindowVisible(hwnd):
+            class_buff = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetClassNameW(hwnd, class_buff, 256)
+            if "Chrome_WidgetWin" in class_buff.value:
+                length = GetWindowTextLength(hwnd)
+                if length > 0:
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    GetWindowText(hwnd, buff, length + 1)
+                    title = buff.value
+                    
+                    # If it's a Brave window, but NOT our TV OS or Netflix
+                    if "Abo7amdanTV OS" not in title and "localhost:5000" not in title and "Netflix" not in title:
+                        rect = ctypes.wintypes.RECT()
+                        ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                        center_x = (rect.left + rect.right) // 2
+                        center_y = (rect.top + rect.bottom) // 2
+                        
+                        # If the center of the normal window is stuck on the TV monitor
+                        if tv_monitor.x <= center_x <= (tv_monitor.x + tv_monitor.width):
+                            if tv_monitor.y <= center_y <= (tv_monitor.y + tv_monitor.height):
+                                # Teleport it safely to the primary monitor (top-left offset)
+                                ctypes.windll.user32.MoveWindow(hwnd, 100, 100, 1280, 720, True)
+        return True
+    EnumWindows(EnumWindowsProc(foreach_window), 0)
+
 def tv_monitor_loop():
     """Runs continuously. Auto-launches when TV connects, auto-closes when TV disconnects."""
-    time.sleep(2)
-    was_tv_on = False
-    
+    global is_launching
     while True:
         try:
-            tv = get_tv_display()
-            is_tv_on = tv is not None
-            
-            
-            if is_tv_on and not was_tv_on:
-                print("TV detected. Launching OS...")
-                launch_browser()
-            
-            
-            elif not is_tv_on and was_tv_on:
-                print("TV turned off. Closing OS window...")
-                close_tv_window()
-                    
-            was_tv_on = is_tv_on
+            tv_monitor = get_tv_display()
+            is_tv_on = tv_monitor is not None
+
+            if is_tv_on:
+                enforce_main_monitor(tv_monitor)
+                if not tv_hwnd and not is_launching:
+                    is_launching = True
+                    launch_browser()
+                    is_launching = False
+            else:
+                if tv_hwnd:
+                    close_tv_window()
         except Exception as e:
             pass
-            
-        time.sleep(3)
+        time.sleep(1.5)
 
 @app.route('/os')
 def os_root():
