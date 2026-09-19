@@ -4,12 +4,8 @@ import subprocess
 import time
 import threading
 import psutil
-import pyautogui
 from flask import Flask, send_from_directory
 from screeninfo import get_monitors
-
-pyautogui.FAILSAFE = False
-
 
 if getattr(sys, 'frozen', False):
     base_dir = sys._MEIPASS
@@ -31,15 +27,11 @@ def get_tv_display():
             if m.name and "LCDTV16" in m.name: return m
         for m in monitors:
             if (m.width == 1360 and m.height == 768) or (m.width == 768 and m.height == 1360): return m
-        
-        
-        return None
     except:
         return None
 
 import ctypes
-import keyboard
-
+import ctypes.wintypes
 tv_hwnd = None
 is_launching = False
 
@@ -55,19 +47,17 @@ def get_os_hwnd():
     def foreach_window(hwnd, lParam):
         nonlocal found_hwnd
         if IsWindowVisible(hwnd):
+            class_buff = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetClassNameW(hwnd, class_buff, 256)
+            if "Chrome_WidgetWin" not in class_buff.value:
+                return True
+                
             length = GetWindowTextLength(hwnd)
             if length > 0:
                 buff = ctypes.create_unicode_buffer(length + 1)
                 GetWindowText(hwnd, buff, length + 1)
                 title = buff.value
                 
-                # Must be a Chromium browser window
-                class_buff = ctypes.create_unicode_buffer(256)
-                ctypes.windll.user32.GetClassNameW(hwnd, class_buff, 256)
-                if "Chrome_WidgetWin" not in class_buff.value:
-                    return True
-                
-                # Catch it instantly even while loading (localhost:5000), but exclude VSCode
                 if ("Abo7amdanTV OS" in title or "localhost:5000" in title) and "Visual Studio Code" not in title:
                     found_hwnd = hwnd
                     return False
@@ -94,18 +84,41 @@ def go_home():
                     break
                 time.sleep(0.1)
                 
-            # If Netflix stubbornly refuses to close, force it via keyboard overrides
+            # If Netflix stubbornly refuses to close, force it via native keyboard overrides
             if ctypes.windll.user32.IsWindowVisible(tv_hwnd):
                 ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
                 time.sleep(0.1)
-                pyautogui.hotkey('ctrl', 'w')
+                
+                user32 = ctypes.windll.user32
+                # Send Ctrl+W
+                user32.keybd_event(0x11, 0, 0, 0) # Ctrl down
+                user32.keybd_event(0x57, 0, 0, 0) # W down
+                user32.keybd_event(0x57, 0, 0x0002, 0) # W up
+                user32.keybd_event(0x11, 0, 0x0002, 0) # Ctrl up
                 time.sleep(0.1)
-                pyautogui.hotkey('alt', 'f4')
+                
+                # Send Alt+F4
+                user32.keybd_event(0x12, 0, 0, 0) # Alt down
+                user32.keybd_event(0x73, 0, 0, 0) # F4 down
+                user32.keybd_event(0x73, 0, 0x0002, 0) # F4 up
+                user32.keybd_event(0x12, 0, 0x0002, 0) # Alt up
                 
         tv_hwnd = None
         launch_browser()
     finally:
         threading.Timer(2.5, launch_lock.release).start()
+
+def native_hotkey_listener():
+    """Native Windows message loop to listen for Home/Esc keys with zero CPU usage."""
+    user32 = ctypes.windll.user32
+    # Register Home (0x24) and Esc (0x1B) with NO modifiers (0)
+    user32.RegisterHotKey(None, 1, 0, 0x24)
+    user32.RegisterHotKey(None, 2, 0, 0x1B)
+    
+    msg = ctypes.wintypes.MSG()
+    while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+        if msg.message == 0x0312: # WM_HOTKEY
+            go_home()
 
 def force_foreground(hwnd):
     """Bypasses Windows ForegroundLockTimeout to brutally steal focus on boot."""
@@ -191,7 +204,12 @@ def close_tv_window():
         if ctypes.windll.user32.IsWindowVisible(tv_hwnd):
             ctypes.windll.user32.SetForegroundWindow(tv_hwnd)
             time.sleep(0.1)
-            pyautogui.hotkey('ctrl', 'w')
+            user32 = ctypes.windll.user32
+            # Send Ctrl+W
+            user32.keybd_event(0x11, 0, 0, 0)
+            user32.keybd_event(0x57, 0, 0, 0)
+            user32.keybd_event(0x57, 0, 0x0002, 0)
+            user32.keybd_event(0x11, 0, 0x0002, 0)
             
     tv_hwnd = None
 
@@ -260,9 +278,7 @@ def serve_imgs(filename):
 
 if __name__ == '__main__':
     
-    keyboard.add_hotkey('home', go_home)
-    keyboard.add_hotkey('esc', go_home)
-    
+    threading.Thread(target=native_hotkey_listener, daemon=True).start()
     
     threading.Thread(target=tv_monitor_loop, daemon=True).start()
     
