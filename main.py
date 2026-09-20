@@ -75,7 +75,16 @@ def go_home():
         
     try:
         if tv_hwnd and ctypes.windll.user32.IsWindowVisible(tv_hwnd):
-            # Send direct hardware close signal
+            # Check if we are ALREADY on the home screen to prevent accidental restarts
+            length = ctypes.windll.user32.GetWindowTextLengthW(tv_hwnd)
+            buff = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(tv_hwnd, buff, length + 1)
+            title = buff.value
+            
+            if "Abo7amdanTV OS" in title or "localhost:5000" in title:
+                return # Already home, do nothing!
+                
+            # We are on Netflix. Send direct hardware close signal
             ctypes.windll.user32.PostMessageW(tv_hwnd, 0x0112, 0xF060, 0)
             
             # Wait for the window to physically disappear from the screen
@@ -106,19 +115,32 @@ def go_home():
         tv_hwnd = None
         launch_browser()
     finally:
+        # Release the lock after a short cooldown to prevent double-presses
         threading.Timer(2.5, launch_lock.release).start()
 
-def native_hotkey_listener():
-    """Native Windows message loop to listen for Home/Esc keys with zero CPU usage."""
+def hotkey_poller():
+    """Polls async keystate. Uses 0% CPU and never swallows keystrokes."""
+    VK_HOME = 0x24
+    VK_BROWSER_HOME = 0xAC
+    VK_ESCAPE = 0x1B
     user32 = ctypes.windll.user32
-    # Register Home (0x24) and Esc (0x1B) with NO modifiers (0)
-    user32.RegisterHotKey(None, 1, 0, 0x24)
-    user32.RegisterHotKey(None, 2, 0, 0x1B)
-    
-    msg = ctypes.wintypes.MSG()
-    while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
-        if msg.message == 0x0312: # WM_HOTKEY
+    while True:
+        if (user32.GetAsyncKeyState(VK_HOME) & 0x8000) or \
+           (user32.GetAsyncKeyState(VK_BROWSER_HOME) & 0x8000) or \
+           (user32.GetAsyncKeyState(VK_ESCAPE) & 0x8000):
             go_home()
+            time.sleep(1) # Prevent rapid multi-triggers
+        time.sleep(0.05) # 50ms poll rate is extremely lightweight
+
+def enforce_single_instance():
+    """Prevents multiple background daemons from running simultaneously and causing lag."""
+    mutex_name = "Global\\Abo7amdanTV_OS_Mutex"
+    kernel32 = ctypes.windll.kernel32
+    mutex = kernel32.CreateMutexW(None, False, mutex_name)
+    if kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
+        print("An instance is already running. Exiting.")
+        sys.exit(0)
+    return mutex # Keep a reference alive
 
 def force_foreground(hwnd):
     """Bypasses Windows ForegroundLockTimeout to brutally steal focus on boot."""
@@ -277,8 +299,9 @@ def serve_imgs(filename):
     return send_from_directory(imgs_dir, filename)
 
 if __name__ == '__main__':
+    _mutex = enforce_single_instance()
     
-    threading.Thread(target=native_hotkey_listener, daemon=True).start()
+    threading.Thread(target=hotkey_poller, daemon=True).start()
     
     threading.Thread(target=tv_monitor_loop, daemon=True).start()
     
