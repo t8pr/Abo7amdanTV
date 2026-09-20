@@ -311,6 +311,13 @@ def serve_imgs(filename):
     return send_from_directory(imgs_dir, filename)
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "uninstall":
+        exe_path = sys.executable
+        # Spawn a detached background CMD to wait 2 seconds and delete the running executable
+        subprocess.Popen(f'ping 127.0.0.1 -n 2 > nul & del "{exe_path}"', shell=True)
+        ctypes.windll.user32.MessageBoxW(0, "Successfully uninstalled the 'atv' command from your system.", "Abo7amdanTV OS", 0x40 | 0x0)
+        sys.exit(0)
+
     _mutex = enforce_single_instance()
     
     threading.Thread(target=hotkey_poller, daemon=True).start()
