@@ -270,37 +270,37 @@ def enforce_main_monitor(tv_monitor):
     EnumWindows(EnumWindowsProc(foreach_window), 0)
 
 def tv_monitor_loop():
-    """One-shot execution. Launches OS, and immediately kills itself when TV turns off."""
-    # Give the TV up to 10 seconds to warm up and be detected
-    for _ in range(10):
-        if get_tv_display():
+    """One-shot execution. Waits for TV to turn on, launches OS, and completely kills itself when TV turns off."""
+    
+    # Phase 1: Wait patiently in the background for the TV to power on
+    while True:
+        tv_monitor = get_tv_display()
+        if tv_monitor:
             break
-        time.sleep(1)
+        time.sleep(2)
         
-    tv_monitor = get_tv_display()
-    if not tv_monitor:
-        os._exit(0)
-        
+    # Phase 2: TV detected! Boot the OS!
     launch_browser()
     
+    # Phase 3: Actively manage the OS quarantine, then commit suicide when TV turns off
     while True:
         try:
             current_tv = get_tv_display()
             if not current_tv:
-                # TV was physically turned off. Clean up and die.
+                # TV was physically turned off. Clean up and terminate the background daemon instantly.
                 if tv_hwnd:
                     close_tv_window()
                 os._exit(0)
                 
             enforce_main_monitor(current_tv)
             
-            # If the user closed the window manually using X or Alt+F4, die.
+            # If the user closed the window manually using X or Alt+F4, terminate the background daemon.
             if tv_hwnd and not ctypes.windll.user32.IsWindowVisible(tv_hwnd):
                 os._exit(0)
                 
         except Exception:
             pass
-        time.sleep(2)
+        time.sleep(1.5)
 
 @app.route('/os')
 def os_root():

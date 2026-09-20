@@ -33,10 +33,11 @@ classDiagram
 
 ## Core Features
 
-* **Strict Quarantine Teleportation**: Chromium shares IPC processes across windows. To prevent desktop browsing tabs from accidentally spawning on the TV screen, the Teleportation Daemon actively scans the TV monitor space every 1.5 seconds. Any non-OS browsing window found in the quarantine zone is instantly teleported back to the primary desktop display.
-* **Native Fullscreen Injection**: Bypasses Windows `ForegroundLockTimeout` limits to hijack thread input and aggressively inject native Chromium `--start-fullscreen` arguments, guaranteeing a flawless, borderless TV experience on fresh boots.
-* **Hardware-Level Termination**: Overrides traditional Alt+F4 closures which can be intercepted by streaming platforms. The OS uses direct `SC_CLOSE` memory signals combined with `Ctrl+W` fallback macros to guarantee background audio processes are fully terminated when navigating home.
-* **Automated Display Lifecycle**: The daemon binds to the Windows display API. When the TV is powered on, the OS boots instantly. When the TV is powered off, the OS terminates its web processes to conserve system resources.
+* **On-Demand Anti-Lag Architecture**: Unlike traditional daemon software that runs 24/7 and drains system resources, Abo7amdanTV OS is designed as a true "On-Demand" background CLI process. When you run the `atv` command, it waits silently using 0% CPU for the TV to power on. The absolute millisecond you turn the TV off, the software completely self-destructs (`os._exit(0)`), clearing itself from memory. This guarantees **zero** UI lag when your primary monitors wake from sleep mode.
+* **Strict Quarantine Teleportation**: Chromium shares IPC processes across windows. To prevent desktop browsing tabs from accidentally spawning on the TV screen, the active Teleportation Daemon scans the TV monitor space. Any non-OS browsing window found in the quarantine zone is instantly teleported back to the primary desktop display.
+* **Zero-Latency Hardware Poller**: Bypasses the notoriously laggy Python `keyboard` module by using a native Windows `GetAsyncKeyState` polling loop. You can press the `Home` key on your remote to exit Netflix instantly without the OS "swallowing" your keystrokes while you code in VSCode.
+* **Native Fullscreen & Auto-Destruction**: Injects native Chromium `--start-fullscreen` arguments for a borderless UI, and uses deep memory `SC_CLOSE` signals coupled with `keybd_event` macros to forcefully terminate background streaming processes.
+* **Single-Instance Mutex Lock**: Deeply integrated native Windows Mutex prevents multiple copies of the `atv` command from running simultaneously, mathematically eliminating redundant polling bottlenecks.
 
 ## Installation & Setup
 
