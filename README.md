@@ -63,7 +63,7 @@ classDiagram
         +TeleportRogueTabs()
     }
     class TV_Display {
-        +Resolution 1360x768
+        +Resolution 1360x768 or 1048x1842
         +Status: Power Off/On
     }
     
@@ -97,7 +97,10 @@ cd Abo7amdanTV
 pip install -r requirements.txt
 ```
 
-**2. Compile for Production**
+**2. Configure Monitor Output**
+The daemon specifically looks for a monitor with standard TV resolutions (`1360x768` or `1048x1842`). If your secondary monitor has a different resolution, modify the `get_tv_display()` function in `main.py` to match your target hardware.
+
+**3. Compile for Production**
 Use PyInstaller to compile the source code into a standalone background binary:
 ```bash
 python -m PyInstaller --noconsole --onefile --add-data "templates;templates" --add-data "imgs;imgs" --name atv main.py

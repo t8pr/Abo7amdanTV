@@ -26,7 +26,9 @@ def get_tv_display():
         for m in monitors:
             if m.name and "LCDTV16" in m.name: return m
         for m in monitors:
+            # Check for old TV (1360x768) and new TV (1048x1842 or 1842x1048)
             if (m.width == 1360 and m.height == 768) or (m.width == 768 and m.height == 1360): return m
+            if (m.width == 1048 and m.height == 1842) or (m.width == 1842 and m.height == 1048): return m
     except:
         return None
 
