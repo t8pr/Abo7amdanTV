@@ -60,15 +60,13 @@ If you wish to deploy this TV OS on your own multi-monitor Windows setup:
 4. **Compile for Production**
    Use PyInstaller to compile the source code into a standalone background daemon:
    ```bash
-   python -m PyInstaller --noconsole --onefile --add-data "templates;templates" --add-data "imgs;imgs" --name Abo7amdanTV_OS main.py
+   python -m PyInstaller --noconsole --onefile --add-data "templates;templates" --add-data "imgs;imgs" --name atv main.py
    ```
 
-5. **Deploy to Startup**
-   Move the resulting `Abo7amdanTV_OS.exe` from the `dist/` directory into your Windows Startup folder:
-   ```text
-   %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
-   ```
-   The OS will now autonomously manage your secondary display in the background on every system boot.
+5. **Install CLI Command**
+   Run the included `setup.bat` file. This will automatically inject the `atv` command into your Windows PATH. 
+   Once installed, you can launch the TV OS anytime by simply pressing `Win + R` and typing `atv`, or by typing `atv` in any Command Prompt window. The OS will autonomously run in the background and gracefully self-terminate the moment the TV is turned off.
+   *(To remove the command later, simply run `uninstall.bat`)*
 
 ## Technology Stack
 
