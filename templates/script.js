@@ -4,10 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const groups = [
         document.querySelectorAll('.nav-item'),
+        document.querySelectorAll('.nav-icons .focusable'),
         document.querySelectorAll('.btn'),
         document.querySelectorAll('.app-card')
     ];
-    let currentGroupIndex = 2; 
+    let currentGroupIndex = 3; 
     let itemIndexInGroup = 0;
 
     function updateFocus() {
@@ -57,6 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'enter':
                 const focusedEl = groups[currentGroupIndex][itemIndexInGroup];
                 if (focusedEl) {
+                    if (focusedEl.getAttribute('data-action') === 'shutdown') {
+                        fetch('/shutdown');
+                        return;
+                    }
                     const url = focusedEl.getAttribute('data-url');
                     if (url) {
                         window.location.href = url;

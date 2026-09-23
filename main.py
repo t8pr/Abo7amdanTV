@@ -304,6 +304,12 @@ def tv_monitor_loop():
             pass
         time.sleep(1.5)
 
+@app.route('/shutdown')
+def shutdown_os():
+    if tv_hwnd:
+        close_tv_window()
+    os._exit(0)
+
 @app.route('/os')
 def os_root():
     return send_from_directory(template_dir, 'index.html')
